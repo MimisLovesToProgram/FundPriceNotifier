@@ -16,11 +16,13 @@ print(today)
 
 links = ["https://www.blackrock.com/americas-offshore/en/products/229298/blackrock-new-energy-a2-eur-fund",
         "https://am.jpmorgan.com/gb/en/asset-management/adv/products/jpm-europe-strategic-value-a-dist-eur-lu0107398884#",
+	"https://am.jpmorgan.com/gb/en/asset-management/adv/products/jpm-nasdaq-equity-premium-income-active-ucits-etf-usd-dist-ie000u9j8hx9",
         "https://markets.ft.com/data/funds/tearsheet/summary?s=LU1775978304:EUR",
         "https://www.franklintempleton.lu/our-funds/price-and-performance/products/2399/Z/templeton-european-opportunities-fund/LU0122612848",
         "https://www.franklintempleton.lu/our-funds/price-and-performance/products/4345/T/franklin-india-fund/LU0231205187",
         "https://www.franklintempleton.lu/our-funds/price-and-performance/products/2182/T/templeton-global-equity-income-fund/LU0211332647",
-        "https://www.franklintempleton.lu/our-funds/price-and-performance/products/4343/T/templeton-bric-fund/LU0229946628"]
+        "https://www.franklintempleton.lu/our-funds/price-and-performance/products/4343/T/templeton-bric-fund/LU0229946628",
+	"https://www.tradingview.com/symbols/XETR-LYMS/"]
 
 prices = []
 excel_path = "/4TB_WD/Mimis/Prices/prices.xlsx"
@@ -40,7 +42,7 @@ options.add_argument("--disable-dev-shm-usage")
 service = Service("/usr/bin/chromedriver")
 
 driver = webdriver.Chrome(service=service, options=options)
-wait = WebDriverWait(driver, 10)
+wait = WebDriverWait(driver, 20)
 
 for link in links:
     driver.get(link)
@@ -78,10 +80,20 @@ for link in links:
             prices.append(-1)
 
     elif "jpmorgan" in link:
-        # Only after this button is pressed does the site load the NAV
-        locator = (By.CSS_SELECTOR, "button.cta-btn.secondary")
-        uk_button = wait.until(EC.presence_of_element_located(locator))
-        uk_button.click()
+        # Only after those buttons are pressed does the site load the NAV.
+        # Also, you are only asked to press it once (doesn't appear in the second visit). ie000u9j8hx9 is the code of the second fund from jpmorgan.
+        if not "ie000u9j8hx9" in link:
+            locator = (By.CSS_SELECTOR, "button.cta-btn.secondary")
+            uk_button = wait.until(EC.presence_of_element_located(locator))
+            uk_button.click()
+
+            locator = (By.ID, "onetrust-reject-all-handler")
+            reject_btn = wait.until(EC.presence_of_element_located(locator))
+            reject_btn.click()
+
+            locator = (By.CSS_SELECTOR, "a.accept")
+            accept_terms = wait.until(EC.presence_of_element_located(locator))
+            accept_terms.click()
 
         # Then just get the NAV by the element with the argument data-testid set to [this]
         locator = (By.CSS_SELECTOR, '[data-testid="quick-stat-nav-value"]')
@@ -118,6 +130,17 @@ for link in links:
         else:
             prices.append(-1)
 
+    elif "tradingview" in link:
+        # Same, just get the price
+        locator = (By.CSS_SELECTOR, ".last-zoF9r75I.js-symbol-last")
+        price_elem = wait.until(EC.presence_of_element_located(locator))
+
+        price = price_elem.text
+        if re.search(price_pattern, price):
+            prices.append(price)
+        else:
+            prices.append(-1)
+
 excel = load_workbook(excel_path)
 sheet = excel.active
 
@@ -127,7 +150,7 @@ missing_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="
 for i, price in enumerate(prices, start=2):
     if price != -1:
         sheet[f"A{i}"].fill = normal_fill
-        sheet[f"A{i}"] = price
+        sheet[f"A{i}"] = float(price)
         sheet[f"D{i}"] = today.strftime("%Y-%m-%d")
     else:
         sheet[f"A{i}"].fill = missing_fill # We don't change the text value, just inform that it is a past price & something went wrong here or on the site.
