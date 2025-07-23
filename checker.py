@@ -151,7 +151,7 @@ for i, price in enumerate(prices, start=2):
     if price != -1:
         sheet[f"A{i}"].fill = normal_fill
         sheet[f"A{i}"] = float(price)
-        sheet[f"D{i}"] = today.strftime("%Y-%m-%d")
+        sheet[f"D{i}"] = '=VALUE("' + today.strftime("%d/%m/%Y") + '")' # Too many quotes to use an f-string...
     else:
         sheet[f"A{i}"].fill = missing_fill # We don't change the text value, just inform that it is a past price & something went wrong here or on the site.
 
