@@ -1,11 +1,11 @@
-## 📈 Fund Price Notifier (Checker)
+# 📈 Fund Price Notifier (Checker)
 
 A project my dad requested so he could get notified when significant price movements happened in certain funds found in an excel file.
 Scrapes some websites for the prices, tracks the maximum prices, looks for important changes, mails the results.
 
 No more constant looking through many websites and manual price tracking!
 
-# How it works (in more detail)
+## How it works (in more detail)
 
 - Reads a list of funds from an Excel file
 - **Searches for their prices** on numerous websites using Selenium
